@@ -3,6 +3,7 @@ from copy import deepcopy
 
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
+from tqdm import tqdm
 
 from tbad.visualisation import compute_bounding_box
 
@@ -40,7 +41,7 @@ def load_trajectories(trajectories_path):
     """
     trajectories_frames, trajectories_coordinates = {}, {}
     folder_names = os.listdir(trajectories_path)
-    for folder_name in folder_names:
+    for folder_name in tqdm(folder_names):
         csv_file_names = os.listdir(os.path.join(trajectories_path, folder_name))
         for csv_file_name in csv_file_names:
             trajectory_file_path = os.path.join(trajectories_path, folder_name, csv_file_name)
@@ -795,7 +796,7 @@ def concatenate_features(global_features, local_features):
     features = {trajectory_id: np.concatenate((global_features[trajectory_id], local_features[trajectory_id]),
                                               axis=-1)
                 for trajectory_id in global_features.keys()}
-    
+
     return features
 
 

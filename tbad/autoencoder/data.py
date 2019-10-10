@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler, RobustScaler, quantile_transform
+from tqdm import tqdm
 
 from tbad.data import StdScaler
 from tbad.visualisation import compute_bounding_box
@@ -184,7 +185,7 @@ class Trajectory:
 def load_trajectories(trajectories_path):
     trajectories = {}
     folder_names = os.listdir(trajectories_path)
-    for folder_name in folder_names:
+    for folder_name in tqdm(folder_names):
         csv_file_names = os.listdir(os.path.join(trajectories_path, folder_name))
         for csv_file_name in csv_file_names:
             trajectory_file_path = os.path.join(trajectories_path, folder_name, csv_file_name)
