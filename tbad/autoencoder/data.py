@@ -182,9 +182,11 @@ class Trajectory:
             consecutive_missing_steps = 0
 
 
-def load_trajectories(trajectories_path):
+def load_trajectories(trajectories_path, batch_indx, total_batches):
     trajectories = {}
-    folder_names = os.listdir(trajectories_path)
+    all_folders = os.listdir(trajectories_path)
+    d = int(len(all_folders)/float(total_batches))
+    folder_names = all_folders[d*batch_indx:d*(batch_indx+1)]
     for folder_name in tqdm(folder_names):
         csv_file_names = os.listdir(os.path.join(trajectories_path, folder_name))
         for csv_file_name in csv_file_names:
@@ -262,6 +264,8 @@ def scale_trajectories(X, scaler=None, strategy='zero_one'):
     original_shape = X.shape
     input_dim = original_shape[-1]
     X = X.reshape(-1, input_dim)
+    X[X == np.inf] = 0
+    X[X == -np.inf] = 0
 
     if strategy == 'zero_one':
         X_scaled, scaler = scale_trajectories_zero_one(X, scaler=scaler)
@@ -373,23 +377,29 @@ def assemble_ground_truth_and_reconstructions(anomaly_masks, trajectory_ids,
     y_true, y_hat = {}, {}
     for full_id in anomaly_masks.keys():
         _, video_id = full_id.split('_')
-        y_true[video_id] = anomaly_masks[full_id].astype(np.int32)
-        y_hat[video_id] = np.zeros_like(y_true[video_id], dtype=np.float32)
+        # y_true[video_id] = anomaly_masks[full_id].astype(np.int32)
+        y_true[video_id] = np.max(anomaly_masks[full_id].astype(np.int32))
+        # y_hat[video_id] = np.zeros_like(y_true[video_id], dtype=np.float32)
+        y_hat[video_id] = 0.0
+
 
     unique_ids = np.unique(trajectory_ids)
     for trajectory_id in unique_ids:
         video_id, _ = trajectory_id.split('_')
         indices = trajectory_ids == trajectory_id
         frames = reconstruction_frames[indices]
-        y_hat[video_id][frames] = np.maximum(y_hat[video_id][frames], reconstruction_errors[indices])
+        y_hat[video_id] = np.maximum(y_hat[video_id], np.mean(reconstruction_errors[indices]))
+        # y_hat[video_id][frames] = np.maximum(y_hat[video_id][frames], reconstruction_errors[indices])
 
     y_true_, y_hat_, video_ids = [], [], []
     for video_id in sorted(y_true.keys()):
         y_true_.append(y_true[video_id])
         y_hat_.append(y_hat[video_id])
-        video_ids.extend([video_id] * len(y_true_[-1]))
+        video_ids.extend([video_id])
+        # video_ids.extend([video_id] * len(y_true_[-1]))
 
-    y_true_, y_hat_ = np.concatenate(y_true_), np.concatenate(y_hat_)
+    # y_true_, y_hat_ = np.concatenate(y_true_), np.concatenate(y_hat_)
+    y_true_, y_hat_ = np.array(y_true_), np.array(y_hat_)
 
     if return_video_ids:
         return y_true_, y_hat_, video_ids

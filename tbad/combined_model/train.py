@@ -50,128 +50,155 @@ def train_combined_model(args):
     root_log_dir = args.root_log_dir
     resume_training = args.resume_training
 
-    trajectories = load_trajectories(trajectories_path)
-    print('\nLoaded %d trajectories.' % len(trajectories))
 
-    trajectories = remove_short_trajectories(trajectories, input_length=input_length,
-                                             input_gap=0, pred_length=pred_length)
-    print('\nRemoved short trajectories. Number of trajectories left: %d.' % len(trajectories))
+    #Todo: split the data into load_batches:
+    total_batches = 10
+    X_global_train_tmp = []
+    X_local_train_tmp = []
+    X_train_tmp = []
+    y_train_tmp = []
+    val_data_tmp = []
 
-    trajectories_train, trajectories_val = split_into_train_and_test(trajectories, train_ratio=0.8, seed=42)
+    for batch_indx in range(total_batches):
+        print('\n>>>>>>> Loading %d batch out of %d \n' % (batch_indx, total_batches))
+        trajectories = load_trajectories(trajectories_path, batch_indx, total_batches)
+        print('\nLoaded %d trajectories.' % len(trajectories))
 
-    if input_missing_steps:
-        trajectories_train = input_trajectories_missing_steps(trajectories_train)
-        print('\nInputted missing steps of trajectories.')
+        trajectories = remove_short_trajectories(trajectories, input_length=input_length,
+                                                 input_gap=0, pred_length=pred_length)
+        print('\nRemoved short trajectories. Number of trajectories left: %d.' % len(trajectories))
 
-    # TODO: General function to extract features
-    # X_..._train, X_..._val, y_..._train, y_..._val, ..._scaler = general_function()
+        trajectories_train, trajectories_val = split_into_train_and_test(trajectories, train_ratio=0.8, seed=42)
 
-    # Global
-    global_trajectories_train = extract_global_features(deepcopy(trajectories_train), video_resolution=video_resolution)
-    global_trajectories_val = extract_global_features(deepcopy(trajectories_val), video_resolution=video_resolution)
+        if input_missing_steps:
+            trajectories_train = input_trajectories_missing_steps(trajectories_train)
+            print('\nInputted missing steps of trajectories.')
 
-    global_trajectories_train = change_coordinate_system(global_trajectories_train, video_resolution=video_resolution,
-                                                         coordinate_system='global', invert=False)
-    global_trajectories_val = change_coordinate_system(global_trajectories_val, video_resolution=video_resolution,
-                                                       coordinate_system='global', invert=False)
-    print('\nChanged global trajectories\'s coordinate system to global.')
+        # TODO: General function to extract features
+        # X_..._train, X_..._val, y_..._train, y_..._val, ..._scaler = general_function()
 
-    _, global_scaler = scale_trajectories(aggregate_autoencoder_data(global_trajectories_train),
-                                          strategy=global_normalisation_strategy)
+        # Global
+        global_trajectories_train = extract_global_features(deepcopy(trajectories_train), video_resolution=video_resolution)
+        global_trajectories_val = extract_global_features(deepcopy(trajectories_val), video_resolution=video_resolution)
 
-    X_global_train, y_global_train = aggregate_rnn_autoencoder_data(global_trajectories_train,
-                                                                    input_length=input_length,
+        global_trajectories_train = change_coordinate_system(global_trajectories_train, video_resolution=video_resolution,
+                                                             coordinate_system='global', invert=False)
+        global_trajectories_val = change_coordinate_system(global_trajectories_val, video_resolution=video_resolution,
+                                                           coordinate_system='global', invert=False)
+        print('\nChanged global trajectories\'s coordinate system to global.')
+
+        _, global_scaler = scale_trajectories(aggregate_autoencoder_data(global_trajectories_train),
+                                              strategy=global_normalisation_strategy)
+
+        X_global_train, y_global_train = aggregate_rnn_autoencoder_data(global_trajectories_train,
+                                                                        input_length=input_length,
+                                                                        input_gap=0, pred_length=pred_length)
+        X_global_val, y_global_val = aggregate_rnn_autoencoder_data(global_trajectories_val, input_length=input_length,
                                                                     input_gap=0, pred_length=pred_length)
-    X_global_val, y_global_val = aggregate_rnn_autoencoder_data(global_trajectories_val, input_length=input_length,
-                                                                input_gap=0, pred_length=pred_length)
 
-    X_global_train, _ = scale_trajectories(X_global_train, scaler=global_scaler, strategy=global_normalisation_strategy)
-    X_global_val, _ = scale_trajectories(X_global_val, scaler=global_scaler, strategy=global_normalisation_strategy)
-    if y_global_train is not None and y_global_val is not None:
-        y_global_train, _ = scale_trajectories(y_global_train, scaler=global_scaler,
-                                               strategy=global_normalisation_strategy)
-        y_global_val, _ = scale_trajectories(y_global_val, scaler=global_scaler, strategy=global_normalisation_strategy)
-    print('\nNormalised global trajectories using the %s normalisation strategy.' % global_normalisation_strategy)
+        X_global_train, _ = scale_trajectories(X_global_train, scaler=global_scaler, strategy=global_normalisation_strategy)
+        X_global_val, _ = scale_trajectories(X_global_val, scaler=global_scaler, strategy=global_normalisation_strategy)
+        if y_global_train is not None and y_global_val is not None:
+            y_global_train, _ = scale_trajectories(y_global_train, scaler=global_scaler,
+                                                   strategy=global_normalisation_strategy)
+            y_global_val, _ = scale_trajectories(y_global_val, scaler=global_scaler, strategy=global_normalisation_strategy)
+        print('\nNormalised global trajectories using the %s normalisation strategy.' % global_normalisation_strategy)
 
-    # Local
-    local_trajectories_train = deepcopy(trajectories_train) if reconstruct_original_data else trajectories_train
-    local_trajectories_val = deepcopy(trajectories_val) if reconstruct_original_data else trajectories_val
+        # Local
+        local_trajectories_train = deepcopy(trajectories_train) if reconstruct_original_data else trajectories_train
+        local_trajectories_val = deepcopy(trajectories_val) if reconstruct_original_data else trajectories_val
 
-    local_trajectories_train = change_coordinate_system(local_trajectories_train, video_resolution=video_resolution,
-                                                        coordinate_system='bounding_box_centre', invert=False)
-    local_trajectories_val = change_coordinate_system(local_trajectories_val, video_resolution=video_resolution,
-                                                      coordinate_system='bounding_box_centre', invert=False)
-    print('\nChanged local trajectories\'s coordinate system to bounding_box_centre.')
+        local_trajectories_train = change_coordinate_system(local_trajectories_train, video_resolution=video_resolution,
+                                                            coordinate_system='bounding_box_centre', invert=False)
+        local_trajectories_val = change_coordinate_system(local_trajectories_val, video_resolution=video_resolution,
+                                                          coordinate_system='bounding_box_centre', invert=False)
+        print('\nChanged local trajectories\'s coordinate system to bounding_box_centre.')
 
-    _, local_scaler = scale_trajectories(aggregate_autoencoder_data(local_trajectories_train),
-                                         strategy=local_normalisation_strategy)
+        _, local_scaler = scale_trajectories(aggregate_autoencoder_data(local_trajectories_train),
+                                             strategy=local_normalisation_strategy)
 
-    X_local_train, y_local_train = aggregate_rnn_autoencoder_data(local_trajectories_train, input_length=input_length,
+        X_local_train, y_local_train = aggregate_rnn_autoencoder_data(local_trajectories_train, input_length=input_length,
+                                                                      input_gap=0, pred_length=pred_length)
+        X_local_val, y_local_val = aggregate_rnn_autoencoder_data(local_trajectories_val, input_length=input_length,
                                                                   input_gap=0, pred_length=pred_length)
-    X_local_val, y_local_val = aggregate_rnn_autoencoder_data(local_trajectories_val, input_length=input_length,
-                                                              input_gap=0, pred_length=pred_length)
 
-    X_local_train, _ = scale_trajectories(X_local_train, scaler=local_scaler, strategy=local_normalisation_strategy)
-    X_local_val, _ = scale_trajectories(X_local_val, scaler=local_scaler, strategy=local_normalisation_strategy)
-    if y_local_train is not None and y_local_val is not None:
-        y_local_train, _ = scale_trajectories(y_local_train, scaler=local_scaler, strategy=local_normalisation_strategy)
-        y_local_val, _ = scale_trajectories(y_local_val, scaler=local_scaler, strategy=local_normalisation_strategy)
-    print('\nNormalised local trajectories using the %s normalisation strategy.' % local_normalisation_strategy)
+        del local_trajectories_train
+        del local_trajectories_val
 
-    # (Optional) Reconstruct the original data
-    if reconstruct_original_data:
-        print('\nReconstruction/Prediction target is the original data.')
-        out_trajectories_train = trajectories_train
-        out_trajectories_val = trajectories_val
+        X_local_train, _ = scale_trajectories(X_local_train, scaler=local_scaler, strategy=local_normalisation_strategy)
+        X_local_val, _ = scale_trajectories(X_local_val, scaler=local_scaler, strategy=local_normalisation_strategy)
+        if y_local_train is not None and y_local_val is not None:
+            y_local_train, _ = scale_trajectories(y_local_train, scaler=local_scaler, strategy=local_normalisation_strategy)
+            y_local_val, _ = scale_trajectories(y_local_val, scaler=local_scaler, strategy=local_normalisation_strategy)
+        print('\nNormalised local trajectories using the %s normalisation strategy.' % local_normalisation_strategy)
 
-        out_trajectories_train = change_coordinate_system(out_trajectories_train, video_resolution=video_resolution,
-                                                          coordinate_system='global', invert=False)
-        out_trajectories_val = change_coordinate_system(out_trajectories_val, video_resolution=video_resolution,
-                                                        coordinate_system='global', invert=False)
-        print('\nChanged target trajectories\'s coordinate system to global.')
+        # (Optional) Reconstruct the original data
+        if reconstruct_original_data:
+            print('\nReconstruction/Prediction target is the original data.')
+            out_trajectories_train = trajectories_train
+            out_trajectories_val = trajectories_val
 
-        _, out_scaler = scale_trajectories(aggregate_autoencoder_data(out_trajectories_train),
-                                           strategy=out_normalisation_strategy)
+            out_trajectories_train = change_coordinate_system(out_trajectories_train, video_resolution=video_resolution,
+                                                              coordinate_system='global', invert=False)
+            out_trajectories_val = change_coordinate_system(out_trajectories_val, video_resolution=video_resolution,
+                                                            coordinate_system='global', invert=False)
+            print('\nChanged target trajectories\'s coordinate system to global.')
 
-        X_out_train, y_out_train = aggregate_rnn_autoencoder_data(out_trajectories_train, input_length=input_length,
+            _, out_scaler = scale_trajectories(aggregate_autoencoder_data(out_trajectories_train),
+                                               strategy=out_normalisation_strategy)
+
+            X_out_train, y_out_train = aggregate_rnn_autoencoder_data(out_trajectories_train, input_length=input_length,
+                                                                      input_gap=0, pred_length=pred_length)
+            X_out_val, y_out_val = aggregate_rnn_autoencoder_data(out_trajectories_val, input_length=input_length,
                                                                   input_gap=0, pred_length=pred_length)
-        X_out_val, y_out_val = aggregate_rnn_autoencoder_data(out_trajectories_val, input_length=input_length,
-                                                              input_gap=0, pred_length=pred_length)
 
-        X_out_train, _ = scale_trajectories(X_out_train, scaler=out_scaler, strategy=out_normalisation_strategy)
-        X_out_val, _ = scale_trajectories(X_out_val, scaler=out_scaler, strategy=out_normalisation_strategy)
-        if y_out_train is not None and y_out_val is not None:
-            y_out_train, _ = scale_trajectories(y_out_train, scaler=out_scaler, strategy=out_normalisation_strategy)
-            y_out_val, _ = scale_trajectories(y_out_val, scaler=out_scaler, strategy=out_normalisation_strategy)
-        print('\nNormalised target trajectories using the %s normalisation strategy.' % out_normalisation_strategy)
+            X_out_train, _ = scale_trajectories(X_out_train, scaler=out_scaler, strategy=out_normalisation_strategy)
+            X_out_val, _ = scale_trajectories(X_out_val, scaler=out_scaler, strategy=out_normalisation_strategy)
+            if y_out_train is not None and y_out_val is not None:
+                y_out_train, _ = scale_trajectories(y_out_train, scaler=out_scaler, strategy=out_normalisation_strategy)
+                y_out_val, _ = scale_trajectories(y_out_val, scaler=out_scaler, strategy=out_normalisation_strategy)
+            print('\nNormalised target trajectories using the %s normalisation strategy.' % out_normalisation_strategy)
 
-    # Shuffle training data and assemble training and validation sets
-    if y_global_train is not None:
-        if reconstruct_original_data:
-            X_global_train, X_local_train, X_out_train, y_global_train, y_local_train, y_out_train = \
-                shuffle(X_global_train, X_local_train, X_out_train,
-                        y_global_train, y_local_train, y_out_train, random_state=42)
-            X_train = [X_global_train, X_local_train, X_out_train]
-            y_train = [y_global_train, y_local_train, y_out_train]
-            val_data = ([X_global_val, X_local_val, X_out_val], [y_global_val, y_local_val, y_out_val])
+        # Shuffle training data and assemble training and validation sets
+        if y_global_train is not None:
+            if reconstruct_original_data:
+                X_global_train, X_local_train, X_out_train, y_global_train, y_local_train, y_out_train = \
+                    shuffle(X_global_train, X_local_train, X_out_train,
+                            y_global_train, y_local_train, y_out_train, random_state=42)
+                X_train = [X_global_train, X_local_train, X_out_train]
+                y_train = [y_global_train, y_local_train, y_out_train]
+                val_data = ([X_global_val, X_local_val, X_out_val], [y_global_val, y_local_val, y_out_val])
+            else:
+                X_global_train, X_local_train, y_global_train, y_local_train = \
+                    shuffle(X_global_train, X_local_train, y_global_train, y_local_train, random_state=42)
+                X_train = [X_global_train, X_local_train]
+                y_train = [y_global_train, y_local_train]
+                val_data = ([X_global_val, X_local_val], [y_global_val, y_local_val])
         else:
-            X_global_train, X_local_train, y_global_train, y_local_train = \
-                shuffle(X_global_train, X_local_train, y_global_train, y_local_train, random_state=42)
-            X_train = [X_global_train, X_local_train]
-            y_train = [y_global_train, y_local_train]
-            val_data = ([X_global_val, X_local_val], [y_global_val, y_local_val])
-    else:
-        if reconstruct_original_data:
-            X_global_train, X_local_train, X_out_train = \
-                shuffle(X_global_train, X_local_train, X_out_train, random_state=42)
-            X_train = [X_global_train, X_local_train, X_out_train]
-            y_train = None
-            val_data = ([X_global_val, X_local_val, X_out_val],)
-        else:
-            X_global_train, X_local_train = shuffle(X_global_train, X_local_train, random_state=42)
-            X_train = [X_global_train, X_local_train]
-            y_train = None
-            val_data = ([X_global_val, X_local_val],)
+            if reconstruct_original_data:
+                X_global_train, X_local_train, X_out_train = \
+                    shuffle(X_global_train, X_local_train, X_out_train, random_state=42)
+                X_train = [X_global_train, X_local_train, X_out_train]
+                y_train = None
+                val_data = ([X_global_val, X_local_val, X_out_val],)
+            else:
+                X_global_train, X_local_train = shuffle(X_global_train, X_local_train, random_state=42)
+                X_train = [X_global_train, X_local_train]
+                y_train = None
+                val_data = ([X_global_val, X_local_val],)
+
+        X_global_train_tmp.append(np.copy(X_global_train))
+        X_local_train_tmp.append(np.copy(X_local_train))
+        X_train_tmp.append(np.copy(X_train))
+        y_train_tmp.append(np.copy(y_train))
+        val_data_tmp.append(np.copy(val_data))
+
+    #collecting the data batches
+    X_global_train = np.vstack(X_global_train_tmp)
+    X_local_train = np.vstack(X_local_train_tmp)
+    X_train = np.vstack(X_train_tmp)
+    y_train = np.vstack(y_train_tmp)
+    val_data = np.vstack(val_data_tmp)
 
     # Model
     print('\nInstantiating combined anomaly model ...')
@@ -192,7 +219,8 @@ def train_combined_model(args):
     else:
         combined_rnn_ae = CombinedEncoderDecoder(**model_args)
 
-    log_dir = set_up_logging(camera_id=camera_id, root_log_dir=root_log_dir, resume_training=resume_training)
+    log_dir = set_up_logging(camera_id=camera_id, root_log_dir=root_log_dir,
+                             resume_training=resume_training, message_passing=message_passing)
     last_epoch = resume_training_from_last_epoch(model=combined_rnn_ae, resume_training=resume_training)
 
     combined_rnn_ae.train(X_train, y_train, epochs=epochs, initial_epoch=last_epoch, batch_size=batch_size,

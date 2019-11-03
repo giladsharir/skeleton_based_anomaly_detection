@@ -111,7 +111,7 @@ def create_arg_parser():
     gp_combined_model_logging.add_argument('--write_predictions_bounding_boxes', action='store_true')
     gp_combined_model_logging.add_argument('--write_anomaly_masks', action='store_true')
     gp_combined_model_logging.add_argument('--write_mistakes', action='store_true')
-
+    gp_combined_model_logging.add_argument('--log_roc_pr', type=str)
     parser_combined_model.set_defaults(func=eval_combined_model)
 
     # Create a sub-parser for evaluation of multiple pre-trained Combined models

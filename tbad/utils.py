@@ -52,13 +52,18 @@ def select_cell(cell_type, hidden_dim, l1=0.0, l2=0.0):
         raise ValueError('Unknown cell type. Please select one of: vanilla, gru, or lstm.')
 
 
-def set_up_logging(camera_id, root_log_dir=None, resume_training=None):
+def set_up_logging(camera_id, root_log_dir=None, resume_training=None, message_passing=False):
+    if message_passing:
+        mp = 'mp'
+    else:
+        mp = ''
     log_dir = None
     if resume_training is not None:
         log_dir = os.path.dirname(resume_training)
     elif root_log_dir is not None:
         time_now = datetime.utcnow().strftime('%Y_%m_%d_%H_%M_%S')
-        log_dir = os.path.join(root_log_dir, camera_id + '_' + time_now)
+        log_dir = os.path.join(root_log_dir, camera_id + '_' + time_now + '_mp' + '_Grobust'
+                               + '_Lrobust' + '_Orobust' + '_down')
         os.makedirs(log_dir)
 
     return log_dir

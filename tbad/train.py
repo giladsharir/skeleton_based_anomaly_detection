@@ -299,7 +299,8 @@ def train_complete_rnn_ae(args):
                                            learning_rate=learning_rate, loss=loss)
 
     # Set up training logging (optional)
-    log_dir = set_up_logging(camera_id=camera_id, root_log_dir=root_log_dir, resume_training=resume_training)
+    log_dir = set_up_logging(camera_id=camera_id, root_log_dir=root_log_dir,
+                             resume_training=resume_training, message_passing=args.message_passing)
 
     # Resume training (optional)
     last_epoch = resume_training_from_last_epoch(model=anomaly_model, resume_training=resume_training)

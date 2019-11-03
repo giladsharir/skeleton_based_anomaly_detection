@@ -3,7 +3,16 @@ import numpy as np
 
 from tbad.losses import binary_crossentropy, mean_absolute_error, mean_squared_error, balanced_mean_squared_error
 from tbad.losses import balanced_mean_absolute_error
+import random
 
+
+def subsample_trajectories(trajectories, rate):
+    filtered_trajectories = {}
+    for trajectory_id, trajectory in trajectories.items():
+        if random.random() < rate:
+            filtered_trajectories[trajectory_id] = trajectory
+
+    return filtered_trajectories
 
 def remove_short_trajectories(trajectories, input_length, input_gap, pred_length=0):
     filtered_trajectories = {}

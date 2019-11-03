@@ -8,7 +8,8 @@ from sklearn.metrics import roc_auc_score, average_precision_score
 from tbad.autoencoder.data import load_trajectories, extract_global_features, change_coordinate_system
 from tbad.autoencoder.data import scale_trajectories, load_anomaly_masks, assemble_ground_truth_and_reconstructions
 from tbad.autoencoder.data import quantile_transform_errors
-from tbad.rnn_autoencoder.data import remove_short_trajectories, aggregate_rnn_ae_evaluation_data
+from tbad.rnn_autoencoder.data import remove_short_trajectories, \
+    aggregate_rnn_ae_evaluation_data, subsample_trajectories
 from tbad.rnn_autoencoder.data import compute_rnn_ae_reconstruction_errors, summarise_reconstruction_errors
 from tbad.rnn_autoencoder.data import summarise_reconstruction, retrieve_future_skeletons
 from tbad.rnn_autoencoder.data import discard_information_from_padded_frames
@@ -84,8 +85,11 @@ def eval_combined_model(args):
     # Data
     trajectories = load_trajectories(trajectories_path)
 
+    # trajectories = subsample_trajectories(trajectories, 0.1)
+
     trajectories = remove_short_trajectories(trajectories, input_length=input_length,
                                              input_gap=input_gap, pred_length=pred_length)
+
 
     global_trajectories = extract_global_features(deepcopy(trajectories), video_resolution=video_resolution)
     global_trajectories = change_coordinate_system(global_trajectories, video_resolution=video_resolution,
@@ -144,6 +148,7 @@ def eval_combined_model(args):
 
     # Evaluate performance
     anomaly_masks = load_anomaly_masks(frame_level_anomaly_masks_path)
+
     y_true, y_hat, video_ids = assemble_ground_truth_and_reconstructions(anomaly_masks, reconstruction_ids,
                                                                          reconstruction_frames, reconstruction_errors,
                                                                          return_video_ids=True)
@@ -154,9 +159,11 @@ def eval_combined_model(args):
     else:
         auroc, aupr = roc_auc_score(y_true, y_hat), average_precision_score(y_true, y_hat)
 
-    print('Reconstruction Based:')
-    print('Camera %s:\tAUROC\tAUPR' % camera_id)
-    print('          \t%.4f\t%.4f\n' % (auroc, aupr))
+    with open(args.log_roc_pr, 'w') as f:
+        f.write('Reconstruction Based:\n')
+        # print('Reconstruction Based:')
+        f.write('Camera %s:\tAUROC\tAUPR\n' % camera_id)
+        f.write('          \t%.4f\t%.4f\n\n' % (auroc, aupr))
 
     if pred_length > 0:
         predicted_frames = frames[:, :pred_length] + input_length
@@ -180,9 +187,10 @@ def eval_combined_model(args):
         else:
             auroc, aupr = roc_auc_score(y_true_pred, y_hat_pred), average_precision_score(y_true_pred, y_hat_pred)
 
-        print('Prediction Based:')
-        print('Camera %s:\tAUROC\tAUPR' % camera_id)
-        print('          \t%.4f\t%.4f\n' % (auroc, aupr))
+        with open(args.log_roc_pr, 'a+') as f:
+            f.write('Prediction Based:\n')
+            f.write('Camera %s:\tAUROC\tAUPR\n' % camera_id)
+            f.write('          \t%.4f\t%.4f\n\n' % (auroc, aupr))
 
         y_true_comb, y_hat_comb = y_true, y_hat + y_hat_pred
         if is_avenue:
@@ -191,9 +199,10 @@ def eval_combined_model(args):
         else:
             auroc, aupr = roc_auc_score(y_true_comb, y_hat_comb), average_precision_score(y_true_comb, y_hat_comb)
 
-        print('Reconstruction + Prediction Based:')
-        print('Camera %s:\tAUROC\tAUPR' % camera_id)
-        print('          \t%.4f\t%.4f\n' % (auroc, aupr))
+        with open(args.log_roc_pr, 'a+') as f:
+            f.write('Reconstruction + Prediction Based:\n')
+            f.write('Camera %s:\tAUROC\tAUPR\n' % camera_id)
+            f.write('          \t%.4f\t%.4f\n' % (auroc, aupr))
 
         if reconstruct_original_data:
             predicted_y_traj = inverse_scale(predicted_y, scaler=out_scaler)
