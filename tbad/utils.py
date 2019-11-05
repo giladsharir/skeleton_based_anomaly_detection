@@ -44,26 +44,26 @@ class LMDBdata:
             with lmdb_txn.cursor() as lmdb_cursor:
                 for bkey, val in lmdb_cursor:
                     key = bkey.decode()
-                    if 'X_global_train_shape'+'%d' % indx in key or 'X_local_train_shape'+'%d' % \
-                      indx in key:
+                    if 'X_global_train_shape'+'%d' % indx == key or 'X_local_train_shape'+'%d' % \
+                      indx == key:
                         X_train_shape.append(np.fromstring(val,dtype=np.int))
-                    elif 'y_global_train_shape'+'%d' % indx in key or 'y_local_train_shape'+'%d' % \
-                      indx in key:
+                    elif 'y_global_train_shape'+'%d' % indx == key or 'y_local_train_shape'+'%d' % \
+                      indx == key:
                         y_train_shape.append(np.fromstring(val, dtype=np.int))
-                    elif 'X_global_val_shape'+'%d' % indx in key or 'X_local_val_shape'+'%d' % \
-                      indx in key:
+                    elif 'X_global_val_shape'+'%d' % indx == key or 'X_local_val_shape'+'%d' % \
+                      indx == key:
                         xval_data_shape.append(np.fromstring(val, dtype=np.int))
-                    elif 'y_global_val_shape' + '%d' % indx in key or 'y_local_val_shape' + '%d' % \
-                      indx in key:
+                    elif 'y_global_val_shape' + '%d' % indx == key or 'y_local_val_shape' + '%d' % \
+                      indx == key:
                         yval_data_shape.append(np.fromstring(val, dtype=np.int))
 
-                    elif 'X_global_train'+'%d' % indx in key or 'X_local_train'+'%d' % indx in key:
+                    elif 'X_global_train'+'%d' % indx == key or 'X_local_train'+'%d' % indx == key:
                         X_train.append(np.fromstring(val, dtype=np.float32))
-                    elif 'y_global_train'+'%d' % indx in key or 'y_local_train'+'%d' % indx in key:
+                    elif 'y_global_train'+'%d' % indx == key or 'y_local_train'+'%d' % indx == key:
                         y_train.append(np.fromstring(val, dtype=np.float32))
-                    elif 'X_global_val'+'%d' % indx in key or 'X_local_val'+'%d' % indx in key:
+                    elif 'X_global_val'+'%d' % indx == key or 'X_local_val'+'%d' % indx == key:
                         xval_data.append(np.fromstring(val, dtype=np.float32))
-                    elif 'y_global_val'+'%d' % indx in key or 'y_local_val'+'%d' % indx in key:
+                    elif 'y_global_val'+'%d' % indx == key or 'y_local_val'+'%d' % indx == key:
                         yval_data.append(np.fromstring(val, dtype=np.float32))
             # val_data = [xval_data, yval_data]
         X_train = [x.reshape(x_s) for x, x_s in zip(X_train, X_train_shape)]
