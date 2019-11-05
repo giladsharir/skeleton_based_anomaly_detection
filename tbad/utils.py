@@ -1,5 +1,8 @@
 import os
 from datetime import datetime
+import lmdb
+import numpy as np
+from collections import OrderedDict
 
 from keras.layers import SimpleRNNCell, GRUCell, LSTMCell
 from keras.optimizers import Adam, RMSprop
@@ -9,6 +12,67 @@ from tbad.losses import modified_binary_crossentropy_2, modified_mean_absolute_e
 from tbad.losses import modified_mean_squared_error_3, modified_balanced_mean_absolute_error
 from utils.score_scaling import ScoreNormalization
 from sklearn.preprocessing import StandardScaler, RobustScaler, QuantileTransformer, MaxAbsScaler, MinMaxScaler
+
+
+class LMDBdata:
+    def __init__(self, lmdb_filename):
+        self.lmdb_env = lmdb.open(lmdb_filename, map_size=int(500e9))
+        self.idx = 0
+
+    def write(self, vars_write):
+        with self.lmdb_env.begin(write=True) as lmdb_txn:
+            for name, a in vars_write.items():
+                if 'shape' in name:
+                    lmdb_txn.put((name + '%d' % self.idx).encode(), np.array(a,dtype=np.int))
+                else:
+                    lmdb_txn.put((name + '%d' % self.idx).encode(), a.astype(np.float32))
+
+        self.idx += 1
+
+    def read(self, indx):
+
+        X_train = []
+        y_train = []
+        X_train_shape = []
+        y_train_shape = []
+        xval_data = []
+        yval_data = []
+        xval_data_shape = []
+        yval_data_shape = []
+
+        with self.lmdb_env.begin() as lmdb_txn:
+            with lmdb_txn.cursor() as lmdb_cursor:
+                for bkey, val in lmdb_cursor:
+                    key = bkey.decode()
+                    if 'X_global_train_shape'+'%d' % indx in key or 'X_local_train_shape'+'%d' % \
+                      indx in key:
+                        X_train_shape.append(np.fromstring(val,dtype=np.int))
+                    elif 'y_global_train_shape'+'%d' % indx in key or 'y_local_train_shape'+'%d' % \
+                      indx in key:
+                        y_train_shape.append(np.fromstring(val, dtype=np.int))
+                    elif 'X_global_val_shape'+'%d' % indx in key or 'X_local_val_shape'+'%d' % \
+                      indx in key:
+                        xval_data_shape.append(np.fromstring(val, dtype=np.int))
+                    elif 'y_global_val_shape' + '%d' % indx in key or 'y_local_val_shape' + '%d' % \
+                      indx in key:
+                        yval_data_shape.append(np.fromstring(val, dtype=np.int))
+
+                    elif 'X_global_train'+'%d' % indx in key or 'X_local_train'+'%d' % indx in key:
+                        X_train.append(np.fromstring(val, dtype=np.float32))
+                    elif 'y_global_train'+'%d' % indx in key or 'y_local_train'+'%d' % indx in key:
+                        y_train.append(np.fromstring(val, dtype=np.float32))
+                    elif 'X_global_val'+'%d' % indx in key or 'X_local_val'+'%d' % indx in key:
+                        xval_data.append(np.fromstring(val, dtype=np.float32))
+                    elif 'y_global_val'+'%d' % indx in key or 'y_local_val'+'%d' % indx in key:
+                        yval_data.append(np.fromstring(val, dtype=np.float32))
+            # val_data = [xval_data, yval_data]
+        X_train = [x.reshape(x_s) for x, x_s in zip(X_train, X_train_shape)]
+        y_train = [x.reshape(x_s) for x, x_s in zip(y_train, y_train_shape)]
+        xval_data = [x.reshape(x_s) for x, x_s in zip(xval_data, xval_data_shape)]
+        yval_data = [x.reshape(x_s) for x, x_s in zip(yval_data, yval_data_shape)]
+        val_data = [xval_data, yval_data]
+        return X_train, y_train, val_data
+
 
 
 def select_optimiser(optimiser, learning_rate):

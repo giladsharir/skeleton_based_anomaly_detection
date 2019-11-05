@@ -6,7 +6,7 @@ from keras.models import Model
 from keras.layers import Input, RNN, Dense, Reshape, Lambda
 import numpy as np
 
-from tbad.utils import select_cell, select_optimiser, select_loss
+from tbad.utils import select_cell, select_optimiser, select_loss, LMDBdata
 
 
 class MessagePassingEncoderDecoder:
@@ -245,7 +245,10 @@ class MessagePassingEncoderDecoder:
 
         return Model(inputs=all_inputs, outputs=all_outputs)
 
-    def train(self, X_train, y_train=None, epochs=10, initial_epoch=0, batch_size=64, val_data=None, log_dir=None):
+    # def train(self, X_train, y_train=None, epochs=10, initial_epoch=0, batch_size=64, val_data=None, log_dir=None):
+    def train(self, DB, epochs=10, initial_epoch=0, batch_size=64,
+              val_data=None, log_dir=None):
+
         self.compile()
 
         callbacks_list = [
@@ -270,39 +273,44 @@ class MessagePassingEncoderDecoder:
             ]
             self._maybe_write_architecture(log_dir)
 
-        if self.reconstruct_original_data:
-            X_global_train, X_local_train, X_out_train = X_train
-            X_global_val, X_local_val, X_out_val = val_data[0]
+        #read from DB
+        for i in range(DB.idx):
+        # for i in [0]:
+            X_train, y_train, val_data =  DB.read(i)
 
-            if y_train is not None:
-                y_global_train, y_local_train, y_out_train = y_train
-                y_global_val, y_local_val, y_out_val = val_data[1]
+            if self.reconstruct_original_data:
+                X_global_train, X_local_train, X_out_train = X_train
+                X_global_val, X_local_val, X_out_val = val_data[0]
+
+                if y_train is not None:
+                    y_global_train, y_local_train, y_out_train = y_train
+                    y_global_val, y_local_val, y_out_val = val_data[1]
+                else:
+                    y_global_train = y_local_train = y_out_train = y_global_val = y_local_val = y_out_val = None
+
+                y = self._construct_output_data_alt(X_out_train, y_out_train,
+                                                    X_global_train, y_global_train, X_local_train, y_local_train)
+                y_val = self._construct_output_data_alt(X_out_val, y_out_val,
+                                                        X_global_val, y_global_val, X_local_val, y_local_val)
             else:
-                y_global_train = y_local_train = y_out_train = y_global_val = y_local_val = y_out_val = None
+                X_global_train, X_local_train = X_train
+                X_global_val, X_local_val = val_data[0]
 
-            y = self._construct_output_data_alt(X_out_train, y_out_train,
-                                                X_global_train, y_global_train, X_local_train, y_local_train)
-            y_val = self._construct_output_data_alt(X_out_val, y_out_val,
-                                                    X_global_val, y_global_val, X_local_val, y_local_val)
-        else:
-            X_global_train, X_local_train = X_train
-            X_global_val, X_local_val = val_data[0]
+                if y_train is not None:
+                    y_global_train, y_local_train = y_train
+                    y_global_val, y_local_val = val_data[1]
+                else:
+                    y_global_train = y_local_train = y_global_val = y_local_val = None
 
-            if y_train is not None:
-                y_global_train, y_local_train = y_train
-                y_global_val, y_local_val = val_data[1]
-            else:
-                y_global_train = y_local_train = y_global_val = y_local_val = None
+                y = self._construct_output_data(X_global_train, X_local_train, y_global_train, y_local_train)
+                y_val = self._construct_output_data(X_global_val, X_local_val, y_global_val, y_local_val)
 
-            y = self._construct_output_data(X_global_train, X_local_train, y_global_train, y_local_train)
-            y_val = self._construct_output_data(X_global_val, X_local_val, y_global_val, y_local_val)
+            X = self._construct_input_data(X_global_train, X_local_train)
+            X_val = self._construct_input_data(X_global_val, X_local_val)
 
-        X = self._construct_input_data(X_global_train, X_local_train)
-        X_val = self._construct_input_data(X_global_val, X_local_val)
-
-        validation_data = (X_val, y_val)
-        self.model.fit(X, y, batch_size=batch_size, epochs=epochs, callbacks=callbacks_list,
-                       validation_data=validation_data, initial_epoch=initial_epoch)
+            validation_data = (X_val, y_val)
+            self.model.fit(X, y, batch_size=batch_size, epochs=epochs, callbacks=callbacks_list,
+                           validation_data=validation_data, initial_epoch=initial_epoch)
 
     def predict(self, X_test, batch_size=256):
         X_global_test, X_local_test = X_test

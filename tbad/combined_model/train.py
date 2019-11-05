@@ -4,6 +4,8 @@ import os
 import numpy as np
 from sklearn.externals import joblib
 from sklearn.utils import shuffle
+import lmdb
+from collections import OrderedDict
 
 from tbad.autoencoder.data import load_trajectories, split_into_train_and_test, extract_global_features
 from tbad.autoencoder.data import change_coordinate_system, scale_trajectories, aggregate_autoencoder_data
@@ -12,6 +14,34 @@ from tbad.rnn_autoencoder.data import remove_short_trajectories, aggregate_rnn_a
 from tbad.combined_model.fusion import CombinedEncoderDecoder
 from tbad.combined_model.message_passing import MessagePassingEncoderDecoder
 from tbad.utils import set_up_logging, resume_training_from_last_epoch
+from tbad.utils import LMDBdata
+
+# class LMDBdata:
+#     def __init__(self, lmdb_filename):
+#         self.lmdb_env = lmdb.open(lmdb_filename, map_size=int(1e9))
+#         self.idx = 0
+#     def write(self, vars_write):
+#         with self.lmdb_env.begin(write=True) as lmdb_txn:
+#             for name, a in vars_write.items():
+#                 lmdb_txn.put(name + '%d' % self.idx, a.astype(np.float32))
+#
+#         self.idx += 1
+#     def read(self):
+#
+#         X_train = []
+#         y_train = []
+#         val_data = []
+#         with self.lmdb_env.begin() as lmdb_txn:
+#             with lmdb_txn.cusor() as lmdb_cursor:
+#                 for key, val in lmdb_cursor:
+#                     if 'X_global_train' in key or 'X_local_train' in key:
+#                         X_train.append(np.fromstring(val, dtype=np.float32))
+#                     elif 'y_global_train' in key or 'y_local_train' in key:
+#                         y_train.append(np.fromstring(val, dtype=np.float32))
+#                     elif 'val' in key:
+#                         val_data.append(np.fromstring(val, dtype=np.float32))
+#
+#         return X_train, y_train, val_data
 
 
 def train_combined_model(args):
@@ -52,14 +82,23 @@ def train_combined_model(args):
 
 
     #Todo: split the data into load_batches:
-    total_batches = 10
-    X_global_train_tmp = []
-    X_local_train_tmp = []
-    X_train_tmp = []
-    y_train_tmp = []
-    val_data_tmp = []
+    total_batches = 100
+    # X_global_train_tmp = []
+    # X_local_train_tmp = []
+    # y_global_train_tmp = []
+    # y_local_train_tmp = []
+    # X_global_val_tmp = []
+    # X_local_val_tmp = []
+    # y_global_val_tmp = []
+    # y_local_val_tmp = []
+    lmdb_filename = 'lmdb.db'
+    DB = LMDBdata(lmdb_filename)
+    # lmdb_env = lmdb.open(lmdb_filename, map_size=int(1e9))
 
     for batch_indx in range(total_batches):
+        # if batch_indx > 0:
+        #     continue
+
         print('\n>>>>>>> Loading %d batch out of %d \n' % (batch_indx, total_batches))
         trajectories = load_trajectories(trajectories_path, batch_indx, total_batches)
         print('\nLoaded %d trajectories.' % len(trajectories))
@@ -165,40 +204,86 @@ def train_combined_model(args):
                 X_global_train, X_local_train, X_out_train, y_global_train, y_local_train, y_out_train = \
                     shuffle(X_global_train, X_local_train, X_out_train,
                             y_global_train, y_local_train, y_out_train, random_state=42)
-                X_train = [X_global_train, X_local_train, X_out_train]
-                y_train = [y_global_train, y_local_train, y_out_train]
-                val_data = ([X_global_val, X_local_val, X_out_val], [y_global_val, y_local_val, y_out_val])
+                # X_train = [X_global_train, X_local_train, X_out_train]
+                # y_train = [y_global_train, y_local_train, y_out_train]
+                # val_data = ([X_global_val, X_local_val, X_out_val], [y_global_val, y_local_val, y_out_val])
             else:
                 X_global_train, X_local_train, y_global_train, y_local_train = \
                     shuffle(X_global_train, X_local_train, y_global_train, y_local_train, random_state=42)
-                X_train = [X_global_train, X_local_train]
-                y_train = [y_global_train, y_local_train]
-                val_data = ([X_global_val, X_local_val], [y_global_val, y_local_val])
+                # X_train = [X_global_train, X_local_train]
+                # y_train = [y_global_train, y_local_train]
+                # val_data = ([X_global_val, X_local_val], [y_global_val, y_local_val])
         else:
             if reconstruct_original_data:
                 X_global_train, X_local_train, X_out_train = \
                     shuffle(X_global_train, X_local_train, X_out_train, random_state=42)
-                X_train = [X_global_train, X_local_train, X_out_train]
-                y_train = None
-                val_data = ([X_global_val, X_local_val, X_out_val],)
+                # X_train = [X_global_train, X_local_train, X_out_train]
+                # y_train = None
+                # val_data = ([X_global_val, X_local_val, X_out_val],)
             else:
                 X_global_train, X_local_train = shuffle(X_global_train, X_local_train, random_state=42)
-                X_train = [X_global_train, X_local_train]
-                y_train = None
-                val_data = ([X_global_val, X_local_val],)
+                # X_train = [X_global_train, X_local_train]
+                # y_train = None
+                # val_data = ([X_global_val, X_local_val],)
 
-        X_global_train_tmp.append(np.copy(X_global_train))
-        X_local_train_tmp.append(np.copy(X_local_train))
-        X_train_tmp.append(np.copy(X_train))
-        y_train_tmp.append(np.copy(y_train))
-        val_data_tmp.append(np.copy(val_data))
+        # continue
+
+        data_dict = {'X_global_train_shape': X_global_train.shape, 'X_local_train_shape': X_local_train.shape,
+                     'y_global_train_shape': y_global_train.shape, 'y_local_train_shape': y_local_train.shape,
+                     'X_global_val_shape': X_global_val.shape, 'X_local_val_shape': X_local_val.shape,
+                     'y_global_val_shape': y_global_val.shape,
+                     'y_local_val_shape': y_local_val.shape,
+                     'X_global_train': X_global_train, 'X_local_train': X_local_train,
+                     'y_global_train': y_global_train, 'y_local_train': y_local_train,
+                     'X_global_val': X_global_val, 'X_local_val': X_local_val,
+                     'y_global_val': y_global_val,
+                     'y_local_val': y_local_val
+                     }
+
+        DB.write(OrderedDict(data_dict.items()))
+        # with lmdb_env.begin(write=True) as lmdb_txn:
+        #   lmdb_txn.put('X_g_t_%d'%batch_indx, X_global_train)
+        #   lmdb_txn.put('X_l_t'%batch_indx, X_local_train)
+        #   lmdb_txn.put('y_g_t'%batch_indx, y_global_train)
+        #   lmdb_txn.put('y_l_t'%batch_indx, y_local_train)
+        #   lmdb_txn.put('X_g_v'%batch_indx, X_global_val)
+        #   lmdb_txn.put('X_l_v'%batch_indx, X_local_val)
+        #   lmdb_txn.put('y_g_v', y_global_val)
+        #   lmdb_txn.put('y_l_v', y_local_val)
+
+
+        # X_global_train_tmp.append(np.copy(X_global_train))
+        # X_local_train_tmp.append(np.copy(X_local_train))
+        # y_global_train_tmp.append(y_global_train.copy())
+        # y_local_train_tmp.append(y_local_train.copy())
+        # X_global_val_tmp.append(X_global_val.copy())
+        # X_local_val_tmp.append(X_local_val.copy())
+        # y_global_val_tmp.append(y_global_val.copy())
+        # y_local_val_tmp.append(y_local_val.copy())
+
+
+        # X_train_tmp.append(np.copy(X_train))
+        # y_train_tmp.append(np.copy(y_train))
+        # val_data_tmp.append(np.copy(val_data))
 
     #collecting the data batches
-    X_global_train = np.vstack(X_global_train_tmp)
-    X_local_train = np.vstack(X_local_train_tmp)
-    X_train = np.vstack(X_train_tmp)
-    y_train = np.vstack(y_train_tmp)
-    val_data = np.vstack(val_data_tmp)
+    # X_global_train = np.vstack(X_global_train_tmp)
+    # X_local_train = np.vstack(X_local_train_tmp)
+    #
+    # y_global_train = np.vstack(y_global_train_tmp)
+    # y_local_train = np.vstack(y_local_train_tmp)
+    # X_global_val = np.vstack(X_global_val_tmp)
+    # X_local_val = np.vstack(X_local_val_tmp)
+    # y_global_val = np.vstack(y_global_val_tmp)
+    # y_local_val = np.vstack(y_local_val_tmp)
+
+    # X_train = [X_global_train, X_local_train]
+    # y_train = [y_global_train, y_local_train]
+    # val_data = ([X_global_val, X_local_val], [y_global_val, y_local_val])
+
+    # X_train = np.vstack(X_train_tmp)
+    # y_train = np.vstack(y_train_tmp)
+    # val_data = np.vstack(val_data_tmp)
 
     # Model
     print('\nInstantiating combined anomaly model ...')
@@ -223,8 +308,10 @@ def train_combined_model(args):
                              resume_training=resume_training, message_passing=message_passing)
     last_epoch = resume_training_from_last_epoch(model=combined_rnn_ae, resume_training=resume_training)
 
-    combined_rnn_ae.train(X_train, y_train, epochs=epochs, initial_epoch=last_epoch, batch_size=batch_size,
-                          val_data=val_data, log_dir=log_dir)
+    combined_rnn_ae.train(DB, epochs=epochs, initial_epoch=last_epoch,
+                          batch_size=batch_size, log_dir=log_dir)
+    # combined_rnn_ae.train(X_train, y_train, epochs=epochs, initial_epoch=last_epoch, batch_size=batch_size,
+    #                       val_data=val_data, log_dir=log_dir)
     print('\nCombined anomaly model successfully trained.')
 
     if log_dir is not None:
