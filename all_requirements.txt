@@ -1,0 +1,89 @@
+# packages in environment at /mnt/home/gilad/anaconda3/envs/tbad2:
+#
+# Name                    Version                   Build  Channel
+_libgcc_mutex             0.1                        main  
+absl-py                   0.8.0                    pypi_0    pypi
+astor                     0.8.0                    pypi_0    pypi
+bleach                    1.5.0                    pypi_0    pypi
+ca-certificates           2019.8.28                     0  
+cachetools                3.1.1                    pypi_0    pypi
+certifi                   2019.9.11                py36_0  
+chardet                   3.0.4                    pypi_0    pypi
+cloudpickle               1.2.2                    pypi_0    pypi
+cycler                    0.10.0                   pypi_0    pypi
+dask                      0.20.1                   pypi_0    pypi
+decorator                 4.4.0                    pypi_0    pypi
+easydict                  1.7                      pypi_0    pypi
+enum34                    1.1.6                    pypi_0    pypi
+gast                      0.2.2                    pypi_0    pypi
+google-auth               1.6.3                    pypi_0    pypi
+google-auth-oauthlib      0.4.1                    pypi_0    pypi
+google-pasta              0.1.7                    pypi_0    pypi
+grpcio                    1.24.1                   pypi_0    pypi
+h5py                      2.10.0                   pypi_0    pypi
+html5lib                  0.9999999                pypi_0    pypi
+idna                      2.7                      pypi_0    pypi
+keras                     2.1.6                    pypi_0    pypi
+keras-applications        1.0.8                    pypi_0    pypi
+keras-preprocessing       1.1.0                    pypi_0    pypi
+kiwisolver                1.1.0                    pypi_0    pypi
+libedit                   3.1.20181209         hc058e9b_0  
+libffi                    3.2.1                hd88cf55_4  
+libgcc-ng                 9.1.0                hdf63c60_0  
+libstdcxx-ng              9.1.0                hdf63c60_0  
+lmdb                      0.97                     pypi_0    pypi
+markdown                  3.1.1                    pypi_0    pypi
+matplotlib                3.1.1                    pypi_0    pypi
+memory-profiler           0.55.0                   pypi_0    pypi
+msgpack                   0.5.6                    pypi_0    pypi
+ncurses                   6.1                  he6710b0_1  
+networkx                  2.3                      pypi_0    pypi
+nibabel                   2.3.0                    pypi_0    pypi
+numpy                     1.17.2                   pypi_0    pypi
+oauthlib                  3.1.0                    pypi_0    pypi
+opencv-python             3.4.1.15                 pypi_0    pypi
+openssl                   1.1.1d               h7b6447c_2  
+opt-einsum                3.1.0                    pypi_0    pypi
+pandas                    0.23.4                   pypi_0    pypi
+pillow                    6.2.0                    pypi_0    pypi
+pip                       19.2.3                   py36_0  
+protobuf                  3.10.0                   pypi_0    pypi
+psutil                    5.6.3                    pypi_0    pypi
+pyasn1                    0.4.7                    pypi_0    pypi
+pyasn1-modules            0.2.7                    pypi_0    pypi
+pyparsing                 2.4.2                    pypi_0    pypi
+python                    3.6.9                h265db76_0  
+python-dateutil           2.8.0                    pypi_0    pypi
+pytz                      2019.3                   pypi_0    pypi
+pywavelets                1.0.3                    pypi_0    pypi
+pyyaml                    3.12                     pypi_0    pypi
+pyzmq                     17.1.2                   pypi_0    pypi
+readline                  7.0                  h7b6447c_5  
+requests                  2.19.1                   pypi_0    pypi
+requests-oauthlib         1.2.0                    pypi_0    pypi
+rsa                       4.0                      pypi_0    pypi
+scikit-image              0.14.0                   pypi_0    pypi
+scikit-learn              0.20.0                   pypi_0    pypi
+scipy                     1.1.0                    pypi_0    pypi
+setuptools                41.2.0                   py36_0  
+six                       1.12.0                   pypi_0    pypi
+sqlite                    3.30.0               h7b6447c_0  
+tensorboard               1.15.0                   pypi_0    pypi
+tensorflow                1.15.0                   pypi_0    pypi
+tensorflow-estimator      1.15.1                   pypi_0    pypi
+tensorflow-gpu            1.15.0                   pypi_0    pypi
+tensorflow-io             0.9.0                    pypi_0    pypi
+tensorflow-tensorboard    0.4.0                    pypi_0    pypi
+termcolor                 1.1.0                    pypi_0    pypi
+tk                        8.6.8                hbc83047_0  
+torchfile                 0.1.0                    pypi_0    pypi
+tornado                   6.0.3                    pypi_0    pypi
+tqdm                      4.23.4                   pypi_0    pypi
+urllib3                   1.23                     pypi_0    pypi
+visdom                    0.1.8.5                  pypi_0    pypi
+websocket-client          0.52.0                   pypi_0    pypi
+werkzeug                  0.16.0                   pypi_0    pypi
+wheel                     0.33.6                   py36_0  
+wrapt                     1.11.2                   pypi_0    pypi
+xz                        5.2.4                h14c3975_4  
+zlib                      1.2.11               h7b6447c_3  
