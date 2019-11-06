@@ -127,7 +127,7 @@ def set_up_logging(camera_id, root_log_dir=None, resume_training=None, message_p
     elif root_log_dir is not None:
         time_now = datetime.utcnow().strftime('%Y_%m_%d_%H_%M_%S')
         log_dir = os.path.join(root_log_dir, camera_id + '_' + time_now + '_mp' + '_Grobust'
-                               + '_Lrobust' + '_Orobust' + '_down')
+                               + '_Lrobust' + '_Orobust' )
         os.makedirs(log_dir)
 
     return log_dir
