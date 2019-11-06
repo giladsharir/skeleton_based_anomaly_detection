@@ -308,6 +308,7 @@ class MessagePassingEncoderDecoder:
             X = self._construct_input_data(X_global_train, X_local_train)
             X_val = self._construct_input_data(X_global_val, X_local_val)
 
+            print('>>>>>> training on batch # %d \n\n' % i)
             validation_data = (X_val, y_val)
             self.model.fit(X, y, batch_size=batch_size, epochs=epochs, callbacks=callbacks_list,
                            validation_data=validation_data, initial_epoch=initial_epoch)
