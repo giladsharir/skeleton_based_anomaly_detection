@@ -83,7 +83,7 @@ def eval_combined_model(args):
     loss = pretrained_combined_model.loss
 
     # Data
-    trajectories = load_trajectories(trajectories_path)
+    trajectories = load_trajectories(trajectories_path, 0, 1)
 
     # trajectories = subsample_trajectories(trajectories, 0.1)
 
