@@ -143,6 +143,7 @@ def create_arg_parser():
     parser_combined_model.add_argument('--video_resolution', default='856x480', type=str,
                                        help='Video resolution of the videos from where the trajectories '
                                             'were extracted.')
+    parser_combined_model.add_argument('--total_load_batches', type=int, default=100)
     parser_combined_model.add_argument('--resume_training', type=str, help='Pre-trained model weights.')
 
     gp_combined_model_arch = parser_combined_model.add_argument_group('Model Architecture')

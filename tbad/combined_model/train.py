@@ -82,7 +82,8 @@ def train_combined_model(args):
 
 
     #Todo: split the data into load_batches:
-    total_batches = 100
+    total_batches = args.total_load_batches
+    # total_batches = 100
     # X_global_train_tmp = []
     # X_local_train_tmp = []
     # y_global_train_tmp = []
