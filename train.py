@@ -145,7 +145,7 @@ def create_arg_parser():
                                             'were extracted.')
     parser_combined_model.add_argument('--total_load_batches', type=int, default=100)
     parser_combined_model.add_argument('--resume_training', type=str, help='Pre-trained model weights.')
-
+    parser_combined_model.add_argument('--skip_lmdb', action='store_true')
     gp_combined_model_arch = parser_combined_model.add_argument_group('Model Architecture')
     gp_combined_model_arch.add_argument('--message_passing', action='store_true',
                                         help='Whether to perform message passing between the global and local branches '

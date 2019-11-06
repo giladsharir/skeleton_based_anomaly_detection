@@ -15,9 +15,10 @@ from sklearn.preprocessing import StandardScaler, RobustScaler, QuantileTransfor
 
 
 class LMDBdata:
-    def __init__(self, lmdb_filename):
+    def __init__(self, lmdb_filename, total_batches):
         self.lmdb_env = lmdb.open(lmdb_filename, map_size=int(500e9))
         self.idx = 0
+        self.total_batches = total_batches
 
     def write(self, vars_write):
         with self.lmdb_env.begin(write=True) as lmdb_txn:
