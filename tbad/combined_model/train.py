@@ -96,8 +96,8 @@ def train_combined_model(args):
     # lmdb_env = lmdb.open(lmdb_filename, map_size=int(1e9))
 
     for batch_indx in range(total_batches):
-        if batch_indx > 0:
-            continue
+        # if batch_indx > 0:
+        #     continue
 
         print('\n>>>>>>> Loading %d batch out of %d \n' % (batch_indx, total_batches))
         trajectories = load_trajectories(trajectories_path, batch_indx, total_batches)
@@ -226,7 +226,7 @@ def train_combined_model(args):
                 # y_train = None
                 # val_data = ([X_global_val, X_local_val],)
 
-        continue
+        # continue
 
         data_dict = {'X_global_train_shape': X_global_train.shape, 'X_local_train_shape': X_local_train.shape,
                      'y_global_train_shape': y_global_train.shape, 'y_local_train_shape': y_local_train.shape,

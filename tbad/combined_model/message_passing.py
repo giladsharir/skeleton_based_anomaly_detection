@@ -274,8 +274,8 @@ class MessagePassingEncoderDecoder:
             self._maybe_write_architecture(log_dir)
 
         #read from DB
-        # for i in range(DB.idx):
-        for i in range(100):
+        # for i in range(100):
+        for i in range(DB.idx):
             X_train, y_train, val_data =  DB.read(i)
 
             if self.reconstruct_original_data:
